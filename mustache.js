@@ -51,7 +51,7 @@
   function testRegExp (re, string) {
     return regExpTest.call(re, string);
   }
-
+  // \S match any non-white space character [^\r\n\t\f ]
   var nonSpaceRe = /\S/;
   function isWhitespace (string) {
     return !testRegExp(nonSpaceRe, string);
@@ -133,7 +133,8 @@
 
       if (!isArray(tagsToCompile) || tagsToCompile.length !== 2)
         throw new Error('Invalid tags: ' + tagsToCompile);
-
+      // \s* \r\n\t\f
+      // /\{\{\s*/
       openingTagRe = new RegExp(escapeRegExp(tagsToCompile[0]) + '\\s*');
       closingTagRe = new RegExp('\\s*' + escapeRegExp(tagsToCompile[1]));
       closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + tagsToCompile[1]));
@@ -149,7 +150,8 @@
 
       // Match any text between tags.
       value = scanner.scanUntil(openingTagRe);
-
+      // 需要替换前面的内容  
+      // 例： Hello {{ name }} -> Hello (value)
       if (value) {
         for (var i = 0, valueLength = value.length; i < valueLength; ++i) {
           chr = value.charAt(i);
@@ -174,18 +176,21 @@
         break;
 
       hasTag = true;
-
+      // /#|\^|\/|>|\{|&|=|!/
       // Get the tag type.
       type = scanner.scan(tagRe) || 'name';
       scanner.scan(whiteRe);
 
       // Get the tag value.
       if (type === '=') {
+        // /\s*=/
         value = scanner.scanUntil(equalsRe);
         scanner.scan(equalsRe);
+        // /\s*\}\}/
         scanner.scanUntil(closingTagRe);
       } else if (type === '{') {
         value = scanner.scanUntil(closingCurlyRe);
+        // /\s*\}/
         scanner.scan(curlyRe);
         scanner.scanUntil(closingTagRe);
         type = '&';
@@ -196,7 +201,7 @@
       // Match the closing tag.
       if (!scanner.scan(closingTagRe))
         throw new Error('Unclosed tag at ' + scanner.pos);
-
+      // {{}} 里面的内容
       token = [ type, value, start, scanner.pos ];
       tokens.push(token);
 
@@ -232,6 +237,7 @@
    * Combines the values of consecutive text tokens in the given `tokens` array
    * to a single token.
    */
+  // [[],[],[],[],[],[]]
   function squashTokens (tokens) {
     var squashedTokens = [];
 
@@ -445,10 +451,13 @@
   Writer.prototype.parse = function parse (template, tags) {
     var cache = this.cache;
     var tokens = cache[template];
-
+    // template 是否被存储
     if (tokens == null)
       tokens = cache[template] = parseTemplate(template, tags);
-
+    // Hello {{ name }}!
+    // -> [[text,Hello,0,9],[name,name,9,19],[text,!,19,21]]
+    // ->[[type,string,start,end]]
+    console.log(tokens);
     return tokens;
   };
 
@@ -495,7 +504,7 @@
       if (value !== undefined)
         buffer += value;
     }
-
+    // 输出的结果
     return buffer;
   };
 
@@ -555,13 +564,13 @@
     if (value != null)
       return value;
   };
-
+  // type = name -> {{}}
   Writer.prototype.escapedValue = function escapedValue (token, context) {
     var value = context.lookup(token[1]);
     if (value != null)
       return mustache.escape(value);
   };
-
+  // 返回内容string, type=text
   Writer.prototype.rawValue = function rawValue (token) {
     return token[1];
   };
@@ -572,6 +581,7 @@
 
   // All high-level mustache.* functions use this writer.
   var defaultWriter = new Writer();
+  console.log(defaultWriter);
 
   /**
    * Clears all cached templates in the default writer.

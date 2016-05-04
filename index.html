@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>mustache</title>
+</head>
+<body onload="loadUser">
+<div id="target">Loading...</div>
+<script id="template" type="x-tmpl-mustache">
+Hello {{ huhu }}{{baba}}!!!
+</script>
+</body>
+<script type="text/javascript" src="./mustache.js"></script>
+<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+<script type="text/javascript">
+  function loadUser() {
+    // dom -> innerHTML -> string 
+    var template = $('#template').html();
+    Mustache.parse(template);   
+    // optional, speeds up future uses
+    var rendered = Mustache.render(template, {huhu: "<Luke>",baba:"nihao"});
+    $('#target').html(rendered);
+  }
+  loadUser();
+</script>
+</html>
